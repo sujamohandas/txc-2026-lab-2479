@@ -1,0 +1,38 @@
+﻿# macOS
+.DS_Store
+
+# IDE and tool configs containing sensitive local keys
+.bob/
+.vscode/
+
+# Terraform
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+**/.terraform.lock.hcl
+
+# Secret values - never commit
+terraform.tfvars
+*.auto.tfvars
+**/*.auto.tfvars
+**/*.tfvars
+
+# Whitelist example tfvars
+!terraform.tfvars.example
+!**/terraform.tfvars.example
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Environment files
+.env
+.env.*

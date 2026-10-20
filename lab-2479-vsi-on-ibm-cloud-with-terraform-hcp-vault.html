@@ -1,0 +1,646 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab 2479 — VSI on IBM Cloud with Terraform + HCP Vault</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.6; color: #1f2328; background: #ffffff; }
+  .page { max-width: 760px; margin: 0 auto; padding: 40px 24px 60px; }
+
+  .lab-header { border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 32px; }
+  .lab-badge { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; background: #3b82d4; color: #fff; padding: 2px 8px; border-radius: 3px; margin-bottom: 10px; }
+  .lab-badge.red { background: #ef4444; }
+  .lab-header h1 { font-size: 22px; font-weight: 700; color: #1f2328; line-height: 1.3; margin-bottom: 6px; }
+  .lab-meta { font-size: 12px; color: #57606a; }
+  .lab-meta span { margin-right: 20px; }
+
+  .toc { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px 20px; margin-bottom: 32px; }
+  .toc h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #57606a; margin-bottom: 10px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 3px; font-size: 13px; }
+  .toc a { color: #3b82d4; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-sub { padding-left: 18px; margin-top: 2px; }
+  .toc .toc-sub li { font-size: 12px; color: #57606a; }
+
+  .objectives { background: #f7f8fa; border: 1px solid #e5e7eb; border-left: 4px solid #3b82d4; border-radius: 4px; padding: 16px 20px; margin-bottom: 32px; }
+  .objectives h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #57606a; margin-bottom: 10px; }
+  .objectives ul { padding-left: 18px; }
+  .objectives li { margin-bottom: 4px; }
+
+  .arch { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 24px; margin-bottom: 32px; text-align: center; }
+  .arch svg { max-width: 100%; }
+
+  h2 { font-size: 16px; font-weight: 700; color: #1f2328; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb; }
+  h2.task2 { border-bottom-color: #ef4444; color: #1f2328; }
+  h2.task2 .task-badge { display: inline-block; font-size: 10px; font-weight: 700; background: #ef4444; color: #fff; padding: 1px 7px; border-radius: 3px; margin-right: 8px; vertical-align: middle; text-transform: uppercase; letter-spacing: .05em; }
+  h3 { font-size: 13px; font-weight: 700; color: #1f2328; margin: 20px 0 8px; }
+
+  .section-intro { background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 4px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; }
+  .section-intro strong { display: block; margin-bottom: 4px; color: #b91c1c; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .step { display: flex; gap: 16px; margin-bottom: 20px; }
+  .step-num { flex-shrink: 0; width: 28px; height: 28px; background: #3b82d4; color: #fff; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .step-num.red { background: #ef4444; }
+  .step-num.orange { background: #f59e0b; }
+  .step-num.green { background: #22c55e; }
+  .step-body { flex: 1; }
+  .step-body p { margin-bottom: 6px; }
+
+  pre { background: #1f2328; color: #e6edf3; border-radius: 5px; padding: 14px 16px; font-size: 12px; font-family: "Cascadia Code", "Fira Mono", "Consolas", monospace; overflow-x: auto; margin: 8px 0 12px; line-height: 1.5; }
+  code { font-family: "Cascadia Code", "Fira Mono", "Consolas", monospace; font-size: 12px; background: #f7f8fa; border: 1px solid #e5e7eb; padding: 1px 5px; border-radius: 3px; }
+
+  .callout { border-radius: 4px; padding: 12px 16px; margin: 12px 0; font-size: 13px; }
+  .callout.info  { background: #eff6ff; border-left: 4px solid #3b82d4; }
+  .callout.warn  { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .callout.tip   { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .callout.error { background: #fef2f2; border-left: 4px solid #ef4444; }
+  .callout strong { display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  th { background: #f7f8fa; text-align: left; padding: 8px 12px; font-weight: 600; border: 1px solid #e5e7eb; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #57606a; }
+  td { padding: 8px 12px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafafa; }
+  td.broken { color: #b91c1c; text-decoration: line-through; font-weight: 600; }
+  td.fixed  { color: #15803d; font-weight: 600; }
+
+  .drift-box { background: #1f2328; color: #e6edf3; border-radius: 5px; padding: 14px 16px; font-size: 12px; font-family: "Cascadia Code","Fira Mono","Consolas",monospace; margin: 12px 0; line-height: 1.6; }
+  .drift-box .del { color: #f87171; }
+  .drift-box .add { color: #86efac; }
+  .drift-box .hdr { color: #93c5fd; }
+  .drift-box .cmt { color: #94a3b8; }
+
+  .outcome { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 20px; margin: 24px 0; }
+  .outcome h3 { color: #15803d; margin-bottom: 12px; }
+  .outcome-bad { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 20px; margin: 24px 0; }
+  .outcome-bad h3 { color: #b91c1c; margin-bottom: 12px; }
+
+  .phase-divider { border: none; border-top: 2px dashed #e5e7eb; margin: 40px 0; }
+
+  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  
+  <div class="lab-header">
+    <div class="lab-badge">Lab 2479</div>
+    <h1>Deploy a VSI on IBM Cloud VPC with Terraform &amp; HCP Vault</h1>
+    <div class="lab-meta">
+      <span>⏱ Duration: ~60 min</span>
+      <span>🧰 Tools: Bob AI · Terraform · HCP Vault · IBM Cloud</span>
+      <span>🏷 Level: Intermediate</span>
+    </div>
+  </div>
+
+  
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#prereqs">Prerequisites</a></li>
+      <li><a href="#phase1">Phase 1 — Environment Setup</a></li>
+      <li><a href="#phase2">Phase 2 — Generate Terraform Code with Bob</a></li>
+      <li><a href="#phase3">Phase 3 — Review the Code (Vault Integration)</a></li>
+      <li><a href="#phase4">Phase 4 — Set Workspace Variables</a></li>
+      <li><a href="#phase5">Phase 5 — Terraform Plan</a></li>
+      <li><a href="#phase6">Phase 6 — Terraform Apply</a></li>
+      <li><a href="#phase7">Phase 7 — Verify the Nginx Page</a></li>
+      <li><a href="#task2">Task 2 — Break, Diagnose &amp; Self-Heal with Bob</a>
+        <ol class="toc-sub">
+          <li><a href="#task2-break">5.1 — Break the Environment</a></li>
+          <li><a href="#task2-diagnose">5.2 — Ask Bob to Troubleshoot</a></li>
+          <li><a href="#task2-fix">5.3 — Review and Approve the Fix</a></li>
+        </ol>
+      </li>
+      <li><a href="#troubleshooting">Troubleshooting Reference</a></li>
+      <li><a href="#resources">Provisioned Resources</a></li>
+      <li><a href="#cleanup">Clean Up</a></li>
+    </ol>
+  </div>
+
+  
+  <div class="objectives">
+    <h3>Lab Objectives</h3>
+    <ul>
+      <li>Use Bob (IBM AI) to generate Terraform code using IBM-certified modules from the terraform-ibm-modules registry</li>
+      <li>Integrate HCP Vault to supply the IBM Cloud API key securely at plan/apply time — never hardcoded</li>
+      <li>Run <code>terraform plan</code> and <code>terraform apply</code> via the Terraform MCP server</li>
+      <li>Provision a VPC, public subnet, VSI (Nginx), and an Application Load Balancer on IBM Cloud</li>
+      <li>Confirm the Nginx "Hello World" page loads via the load balancer's public hostname</li>
+      <li><strong>Break the environment</strong> by removing a security group rule, then use Bob to diagnose the drift and self-heal via <code>terraform apply</code></li>
+    </ul>
+  </div>
+
+  
+  <div class="arch">
+    <svg xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,sans-serif" font-size="11">
+      <rect x="10" y="100" width="80" height="40" rx="4" fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.2"></rect>
+      <text x="50" y="116" text-anchor="middle" fill="#374151" font-weight="600">Internet</text>
+      <text x="50" y="130" text-anchor="middle" fill="#6b7280">Browser</text>
+      <line x1="91" y1="120" x2="135" y2="120" stroke="#3b82d4" stroke-width="1.5" marker-end="url(#arr)"></line>
+      <text x="113" y="113" text-anchor="middle" fill="#3b82d4" font-size="10">:80</text>
+      <rect x="540" y="10" width="150" height="60" rx="4" fill="#7c5cd8" fill-opacity=".1" stroke="#7c5cd8" stroke-width="1.2"></rect>
+      <text x="615" y="30" text-anchor="middle" fill="#7c5cd8" font-weight="700">HCP Vault</text>
+      <text x="615" y="46" text-anchor="middle" fill="#7c5cd8">kv/IBM_CLOUD_API_KEY</text>
+      <text x="615" y="61" text-anchor="middle" fill="#7c5cd8" font-size="10">↳ IBM_KEY (fetched at plan time)</text>
+      <rect x="140" y="60" width="380" height="180" rx="6" fill="#eff6ff" stroke="#3b82d4" stroke-width="1.5"></rect>
+      <text x="160" y="78" fill="#3b82d4" font-weight="700" font-size="10">IBM Cloud VPC — us-south   demo-vpc</text>
+      <rect x="155" y="85" width="350" height="140" rx="4" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"></rect>
+      <text x="170" y="100" fill="#1d4ed8" font-size="10">Public Subnet  10.10.10.0/24  (us-south-1)</text>
+      <rect x="140" y="105" width="110" height="50" rx="4" fill="#fff" stroke="#3b82d4" stroke-width="1.5"></rect>
+      <text x="195" y="125" text-anchor="middle" fill="#3b82d4" font-weight="700">ALB</text>
+      <text x="195" y="141" text-anchor="middle" fill="#57606a">demo-alb</text>
+      <line x1="250" y1="130" x2="300" y2="130" stroke="#3b82d4" stroke-width="1.5" marker-end="url(#arr)"></line>
+      <text x="275" y="123" text-anchor="middle" fill="#3b82d4" font-size="10">:80</text>
+      <rect x="300" y="105" width="170" height="50" rx="4" fill="#fff" stroke="#1d4ed8" stroke-width="1.5"></rect>
+      <text x="385" y="125" text-anchor="middle" fill="#1d4ed8" font-weight="700">VSI  (cx2-2x4)</text>
+      <text x="385" y="141" text-anchor="middle" fill="#57606a">Ubuntu 24.04 + Nginx</text>
+      <text x="308" y="170" fill="#374151" font-size="10">SG: allow :22, :80 inbound</text>
+      <text x="308" y="184" fill="#374151" font-size="10">ACL: allow :80, ephemeral</text>
+      <rect x="480" y="105" width="30" height="30" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"></rect>
+      <text x="495" y="125" text-anchor="middle" fill="#92400e" font-size="10">PGW</text>
+      <line x1="540" y1="55" x2="385" y2="105" stroke="#7c5cd8" stroke-width="1.2" marker-end="url(#varr)"></line>
+      <text x="490" y="72" fill="#7c5cd8" font-size="10">API key</text>
+      <defs>
+        <marker id="arr"><path d="M0,0 L8,3 L0,6 Z" fill="#3b82d4"></path></marker>
+        <marker id="varr"><path d="M0,0 L8,3 L0,6 Z" fill="#7c5cd8"></path></marker>
+      </defs>
+    </svg>
+    <p style="font-size:11px;color:#57606a;margin-top:8px">Architecture: Internet → ALB (demo-alb) → VSI (Nginx) · IBM Cloud API key sourced from HCP Vault at plan time</p>
+  </div>
+
+  
+  <h2 id="prereqs">Prerequisites</h2>
+  <table>
+    <tr><th>Requirement</th><th>Notes</th></tr>
+    <tr><td>IBM Bob (AI assistant)</td><td>Running in Agent mode</td></tr>
+    <tr><td>Podman Desktop</td><td>Installed at <code>C:\Program Files\RedHat\Podman\podman.exe</code></td></tr>
+    <tr><td>WSL 2</td><td>Required by Podman machine; no separate Linux distro needed</td></tr>
+    <tr><td>HCP Terraform account</td><td>Organisation: <code>TechX-2026</code> · Workspace: <code>vsi_vpc_2479</code></td></tr>
+    <tr><td>HCP Vault cluster</td><td>KV-v2 mount <code>kv/</code> containing secret <code>IBM_CLOUD_API_KEY</code></td></tr>
+    <tr><td>IBM Cloud API key</td><td>Stored in Vault at <code>kv/IBM_CLOUD_API_KEY</code> as field <code>IBM_KEY</code></td></tr>
+  </table>
+
+  
+  <h2 id="phase1">Phase 1 — Environment Setup</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h3>Initialise WSL 2 and Podman Machine</h3>
+      <p>Open PowerShell as Administrator and run the following commands. Podman imports its own embedded WSL distro automatically — no separate Linux distro is needed.</p>
+      <pre>wsl --install --no-distribution
+wsl --set-default-version 2
+&amp; "C:\Program Files\RedHat\Podman\podman.exe" machine init
+&amp; "C:\Program Files\RedHat\Podman\podman.exe" machine start</pre>
+      <p>Verify the machine is running:</p>
+      <pre>&amp; "C:\Program Files\RedHat\Podman\podman.exe" machine list</pre>
+      <p>Expected output: <code>podman-machine-default</code> with status <strong>Currently running</strong>.</p>
+      <div class="callout warn">
+        <strong>WSL opens and closes immediately?</strong>
+        This means no Linux distro is installed yet. Running <code>podman machine init</code> resolves it — Podman installs its own embedded distro automatically.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h3>Configure Bob's MCP Servers (<code>.bob/mcp.json</code>)</h3>
+      <p>Update the Bob config to use the full Podman path and enable Terraform plan/apply operations:</p>
+      <pre>{
+  "mcpServers": {
+    "terraform": {
+      "command": "C:\\Program Files\\RedHat\\Podman\\podman.exe",
+      "args": ["run","-i","--rm","-e","TFE_TOKEN","-e","TFE_ADDRESS",
+               "-e","ENABLE_TF_OPERATIONS","hashicorp/terraform-mcp-server:0.3.3"],
+      "env": {
+        "TFE_TOKEN": "&lt;your-hcp-terraform-token&gt;",
+        "TFE_ADDRESS": "https://app.terraform.io",
+        "ENABLE_TF_OPERATIONS": "true"
+      }
+    },
+    "vault": {
+      "command": "C:\\Program Files\\RedHat\\Podman\\podman.exe",
+      "args": ["run","-i","--rm","-e","VAULT_ADDR","-e","VAULT_TOKEN",
+               "-e","VAULT_NAMESPACE","hashicorp/vault-mcp-server:0.2.0"],
+      "env": {
+        "VAULT_ADDR": "https://&lt;cluster&gt;.z1.hashicorp.cloud:8200",
+        "VAULT_TOKEN": "&lt;your-vault-token&gt;",
+        "VAULT_NAMESPACE": "admin"
+      }
+    }
+  }
+}</pre>
+      <div class="callout info">
+        <strong>Vault token TTL</strong>
+        HCP Vault tokens expire (typically ~6 hours). If a plan fails with <code>invalid token</code>, generate a new one from the HCP portal and update <code>VAULT_TOKEN</code> here AND in the HCP Terraform workspace variable <code>vault_token</code>.
+      </div>
+    </div>
+  </div>
+
+  
+  <h2 id="phase2">Phase 2 — Generate Terraform Code with Bob</h2>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h3>Prompt Bob</h3>
+      <p>In the Bob chat panel, enter:</p>
+      <pre>Generate me a terraform code for VSI within a VPC with public subnet
+and required security group. Use the terraform-ibm-modules registry to
+generate the components. I want to integrate Terraform HCP to vault to
+fetch the IBM_CLOUD_API_KEY secret in real-time.</pre>
+      <p>Bob queries the <strong>terraform-ibm-modules MCP server</strong>, resolves the latest module versions, and creates the following files in <code>terraform/</code>:</p>
+      <table>
+        <tr><th>File</th><th>Purpose</th></tr>
+        <tr><td><code>providers.tf</code></td><td>Terraform block, Vault provider, IBM Cloud provider wired to Vault secret</td></tr>
+        <tr><td><code>vault.tf</code></td><td>KV-v2 data source reading <code>kv/IBM_CLOUD_API_KEY</code> from HCP Vault</td></tr>
+        <tr><td><code>main.tf</code></td><td>VPC module, VSI module with ALB and Nginx cloud-init, Network ACL rules</td></tr>
+        <tr><td><code>ssh_key.tf</code></td><td>RSA-4096 key pair; public half registered with IBM Cloud, private half stored back in Vault</td></tr>
+        <tr><td><code>variables.tf</code></td><td>All input variable declarations</td></tr>
+        <tr><td><code>outputs.tf</code></td><td>Exposes VPC ID, subnet ID, VSI list, and <code>load_balancer_hostname</code></td></tr>
+      </table>
+    </div>
+  </div>
+
+  
+  <h2 id="phase3">Phase 3 — Review the Code (Vault Integration)</h2>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h3>How the IBM Cloud API Key Is Secured</h3>
+      <p>The API key is <strong>never written as plain text</strong> anywhere. The secure flow is:</p>
+      <div class="callout tip">
+        <strong>Security Flow</strong>
+        HCP Vault <code>kv/IBM_CLOUD_API_KEY</code> → <code>data "vault_kv_secret_v2"</code> in <code>vault.tf</code> → <code>provider "ibm" { ibmcloud_api_key = … }</code> in <code>providers.tf</code>
+      </div>
+      <p><strong>vault.tf</strong> — reads the secret from Vault at plan/apply time:</p>
+      <pre>data "vault_kv_secret_v2" "ibmcloud" {
+  mount = "kv"
+  name  = "IBM_CLOUD_API_KEY"
+}</pre>
+      <p><strong>providers.tf</strong> — the IBM provider receives the value directly:</p>
+      <pre>provider "ibm" {
+  ibmcloud_api_key = data.vault_kv_secret_v2.ibmcloud.data["IBM_KEY"]
+  region           = var.region
+}</pre>
+      <div class="callout warn">
+        <strong>State file sensitivity</strong>
+        A <code>data</code> source writes values to Terraform state. Restrict access to your HCP Terraform workspace state and treat it as sensitive.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <h3>Key Modules Used</h3>
+      <table>
+        <tr><th>Module</th><th>Version</th><th>Provisions</th></tr>
+        <tr><td><code>terraform-ibm-modules/landing-zone-vpc/ibm</code></td><td>10.0.11</td><td>VPC · public subnet · public gateway · network ACL · default SG rules</td></tr>
+        <tr><td><code>terraform-ibm-modules/landing-zone-vsi/ibm</code></td><td>8.2.0</td><td>VSI · dedicated security group · Application Load Balancer · pool · listener</td></tr>
+      </table>
+    </div>
+  </div>
+
+  
+  <h2 id="phase4">Phase 4 — Set Workspace Variables in HCP Terraform</h2>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <h3>Create Terraform Variables</h3>
+      <p>Navigate to: <strong>HCP Terraform → TechX-2026 → vsi_vpc_2479 → Variables</strong> and add the following. Mark <code>vault_token</code> as sensitive.</p>
+      <table>
+        <tr><th>Variable</th><th>Value</th><th>Sensitive</th></tr>
+        <tr><td><code>vault_addr</code></td><td>Your HCP Vault cluster URL</td><td>No</td></tr>
+        <tr><td><code>vault_token</code></td><td>Your Vault token</td><td>✅ Yes</td></tr>
+        <tr><td><code>vault_namespace</code></td><td><code>admin</code></td><td>No</td></tr>
+        <tr><td><code>resource_group_id</code></td><td>IBM Cloud resource group ID</td><td>No</td></tr>
+        <tr><td><code>prefix</code></td><td><code>demo</code></td><td>No</td></tr>
+        <tr><td><code>region</code></td><td><code>us-south</code></td><td>No</td></tr>
+      </table>
+      <div class="callout info">
+        <strong>Tip</strong>
+        Bob can set these variables automatically via the HCP Terraform API. Ask: <em>"Set the workspace variables for me."</em>
+      </div>
+    </div>
+  </div>
+
+  
+  <h2 id="phase5">Phase 5 — Terraform Plan</h2>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-body">
+      <h3>Ask Bob to Run the Plan</h3>
+      <pre>Ask BOB to run terraform plan via the Terraform MCP server and review the planned resources.</pre>
+      <p>Bob packages the <code>terraform/</code> files, uploads them to HCP Terraform as a configuration version, and triggers a plan-only run. Expected output:</p>
+      <pre>Plan: 26 to add, 0 to change, 0 to destroy.
+
+  create  tls_private_key.vsi
+  create  vault_kv_secret_v2.vsi_private_key
+  create  module.vpc.ibm_is_vpc.vpc
+  create  module.vpc.ibm_is_public_gateway.gateway["zone-1"]
+  create  module.vpc.ibm_is_network_acl.network_acl["vpc-acl"]
+  create  module.vpc.ibm_is_subnet.subnet["demo-vpc-public-subnet"]
+  create  module.vpc.ibm_is_security_group_rule.* (×3)
+  create  module.vsi.ibm_is_security_group.* (demo-vsi-sg, demo-alb-sg)
+  create  module.vsi.ibm_is_security_group_rule.* (×5)
+  create  module.vsi.ibm_is_virtual_network_interface
+  create  module.vsi.ibm_is_instance.vsi["public-subnet-0"]
+  create  module.vsi.ibm_is_lb.lb["demo-alb"]
+  create  module.vsi.ibm_is_lb_pool.pool["demo-alb"]
+  create  module.vsi.ibm_is_lb_pool_member
+  create  module.vsi.ibm_is_lb_listener.listener["demo-alb"]
+  create  ibm_is_ssh_key.vsi</pre>
+      <div class="callout tip">
+        <strong>What to look for</strong>
+        Confirm <strong>0 to destroy</strong>. Verify the ALB, VSI, VPC, and Vault secret write all appear.
+      </div>
+    </div>
+  </div>
+
+  
+  <h2 id="phase6">Phase 6 — Terraform Apply</h2>
+
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-body">
+      <h3>Ask Bob to Apply</h3>
+      <pre>Ask BOB to run terraform apply to provision the environment.</pre>
+      <p>Bob triggers an auto-apply run in HCP Terraform. Provisioning takes approximately <strong>8–12 minutes</strong>. Resources are created in dependency order:</p>
+      <table>
+        <tr><th>Resource</th><th>Approx. time</th></tr>
+        <tr><td>VPC + address prefix + ACL</td><td>~30 s</td></tr>
+        <tr><td>Public subnet</td><td>~15 s</td></tr>
+        <tr><td>VSI (Ubuntu 24.04)</td><td>~20 s</td></tr>
+        <tr><td>Application Load Balancer</td><td>~4 min</td></tr>
+        <tr><td>LB pool + pool member</td><td>~2 min</td></tr>
+        <tr><td>LB listener</td><td>~90 s</td></tr>
+        <tr><td>SSH private key stored in Vault</td><td>&lt;5 s</td></tr>
+      </table>
+      <p>When the HCP Terraform run status shows <code>applied</code>, all 26 resources have been created.</p>
+    </div>
+  </div>
+
+  
+  <h2 id="phase7">Phase 7 — Verify the Nginx Page</h2>
+
+  <div class="step">
+    <div class="step-num">9</div>
+    <div class="step-body">
+      <h3>Retrieve the Load Balancer Hostname</h3>
+      <p>Bob reads the Terraform state outputs automatically:</p>
+      <table>
+        <tr><th>Output</th><th>Example value</th></tr>
+        <tr><td><code>load_balancer_hostname</code></td><td><code>b86b0515-us-south.lb.appdomain.cloud</code></td></tr>
+        <tr><td><code>vpc_id</code></td><td><code>r006-1c27a5b2-…</code></td></tr>
+        <tr><td><code>public_subnet_id</code></td><td><code>0717-e0bd45c1-…</code></td></tr>
+        <tr><td><code>vsi_list</code></td><td><code>demo-c52c-001 @ 10.10.10.4</code></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">10</div>
+    <div class="step-body">
+      <h3>Open in Your Browser</h3>
+      <pre>http://b86b0515-us-south.lb.appdomain.cloud/</pre>
+      <div class="outcome">
+        <h3>✅ Expected Page</h3>
+        <p style="font-size:18px;font-weight:700;margin-bottom:4px">Hello World from IBM Cloud VSI</p>
+        <p style="color:#57606a">Deployed via Terraform + HCP Vault</p>
+      </div>
+      <div class="callout warn">
+        <strong>Page not loading?</strong>
+        The most common cause is the subnet Network ACL missing explicit rules for port 80 and ephemeral return ports. Ask Bob to diagnose — it will inspect the ACL and add the missing rules.
+      </div>
+    </div>
+  </div>
+
+  <hr class="phase-divider" />
+
+  
+  
+  
+
+  <h2 id="task2" class="task2">
+    <span class="task-badge">Task 2</span>Break, Diagnose &amp; Self-Heal with IBM Bob
+  </h2>
+
+  <div class="section-intro">
+    <strong>What this task validates</strong>
+    The same Bob + MCP setup used to <em>build</em> the environment can also <em>maintain</em> it. You will deliberately break the infrastructure, watch Bob detect the configuration drift via <code>terraform plan</code>, and then approve a self-healing <code>terraform apply</code> to restore service — all without touching the IBM Cloud console.
+  </div>
+
+  
+  <h3 id="task2-break">5.1 — Breaking the Environment</h3>
+
+  <div class="step">
+    <div class="step-num red">B</div>
+    <div class="step-body">
+      <h3>Run the Break Script</h3>
+      <p>The provided script <code>break-lab-app.sh</code> (or equivalent PowerShell) performs two changes on the VSI security group <code>demo-vsi-sg</code>:</p>
+      <ol style="padding-left:18px;margin:8px 0">
+        <li>Deletes the inbound rule that allows TCP port <strong>80</strong></li>
+        <li>Adds a replacement inbound rule for TCP port <strong>8080</strong></li>
+      </ol>
+      <p>Nginx inside the VSI is <strong>untouched</strong> — it still listens on port 80. Only the network path is broken.</p>
+      <pre># PowerShell equivalent of break-lab-app.sh
+$sgId     = "&lt;your-vsi-sg-id&gt;"            # e.g. r006-40b33d67-...
+$rule80Id = "&lt;port-80-rule-id&gt;"           # e.g. r006-4c09a388-...
+
+# 1. Delete port 80 inbound rule
+Invoke-RestMethod -Uri "https://us-south.iaas.cloud.ibm.com/v1/security_groups/$sgId/rules/$rule80Id?version=2024-01-01&amp;generation=2" `
+  -Method DELETE -Headers @{ "Authorization" = "Bearer $iamToken" }
+
+# 2. Add port 8080 inbound rule
+Invoke-RestMethod -Uri "https://us-south.iaas.cloud.ibm.com/v1/security_groups/$sgId/rules?version=2024-01-01&amp;generation=2" `
+  -Method POST `
+  -Headers @{ "Authorization" = "Bearer $iamToken"; "Content-Type" = "application/json" } `
+  -Body '{"direction":"inbound","protocol":"tcp","port_min":8080,"port_max":8080,"remote":{"cidr_block":"0.0.0.0/0"}}'</pre>
+      <p>After running the script, the security group rules are:</p>
+      <table>
+        <tr><th>Direction</th><th>Protocol</th><th>Port</th><th>Status</th></tr>
+        <tr><td>inbound</td><td>tcp</td><td class="broken">80</td><td>❌ Deleted</td></tr>
+        <tr><td>inbound</td><td>tcp</td><td>8080</td><td>⚠️ Added (wrong port)</td></tr>
+        <tr><td>inbound</td><td>tcp</td><td>22</td><td>✅ Unchanged</td></tr>
+        <tr><td>outbound</td><td>all</td><td>—</td><td>✅ Unchanged</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num red">✓</div>
+    <div class="step-body">
+      <h3>Confirm the App Is Down</h3>
+      <p>Refresh your browser tab pointing at the load balancer URL:</p>
+      <pre>http://b86b0515-us-south.lb.appdomain.cloud/</pre>
+      <div class="outcome-bad">
+        <h3>🔴 Expected: App Unreachable</h3>
+        <p>The browser should time out or show a connection error. The ALB health check fails because it can no longer reach the VSI on port 80 — traffic is dropped.</p>
+      </div>
+    </div>
+  </div>
+
+  
+  <h3 id="task2-diagnose">5.2 — Ask Bob to Troubleshoot</h3>
+
+  <div class="step">
+    <div class="step-num orange">D</div>
+    <div class="step-body">
+      <h3>Prompt Bob to Diagnose</h3>
+      <p>In the Bob chat panel, type:</p>
+      <pre>This application is not working, can you help troubleshoot?</pre>
+      <p>Bob will use the <strong>Terraform MCP server</strong> to run a <code>terraform plan</code> against the live HCP Terraform workspace. Terraform compares the <em>desired state</em> (your <code>.tf</code> files) against the <em>actual state</em> in IBM Cloud and reports any drift.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num orange">✓</div>
+    <div class="step-body">
+      <h3>Review Bob's Drift Detection Output</h3>
+      <p>The plan output will show exactly one drift event and one remediation action:</p>
+      <div class="drift-box">
+        <span class="hdr">Terraform detected the following drift in the remote state:</span><br /><br />
+        <span class="del">~ module.vsi.ibm_is_security_group.security_group["demo-vsi-sg"]</span><br />
+        <span class="del">  # (update — remote rule removed out-of-band)</span><br /><br />
+        <span class="hdr">Terraform will perform the following actions:</span><br /><br />
+        <span class="add"># module.vsi.ibm_is_security_group_rule.security_group_rules["demo-vsi-sg-allow-http"] will be created</span><br />
+        <span class="add">+ resource "ibm_is_security_group_rule" "security_group_rules" {</span><br />
+        <span class="add">+   direction = "inbound"</span><br />
+        <span class="add">+   group     = "r006-40b33d67-d293-46d1-8826-bd6768906bfc"</span><br />
+        <span class="add">+   ip_version = "ipv4"</span><br />
+        <span class="add">+   port_min  = 80</span><br />
+        <span class="add">+   port_max  = 80</span><br />
+        <span class="add">+   remote    = "0.0.0.0/0"</span><br />
+        <span class="add">+ }</span><br /><br />
+        <span class="hdr">Plan: 1 to add, 0 to change, 0 to destroy.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num orange">💡</div>
+    <div class="step-body">
+      <h3>Bob's Root Cause Explanation</h3>
+      <div class="callout error">
+        <strong>Root Cause Identified</strong>
+        Terraform detected configuration drift on the VSI security group <code>demo-vsi-sg</code>. The inbound rule allowing TCP port 80 from <code>0.0.0.0/0</code> — defined in <code>main.tf</code> as <code>allow-http</code> — was deleted from IBM Cloud outside of Terraform (by the break script). A rogue rule for port 8080 was added in its place.<br /><br />
+        Because Nginx listens on <strong>port 80</strong>, and the ALB pool health check targets port 80, the load balancer can no longer reach the instance. All traffic is dropped — causing the app to appear unreachable.<br /><br />
+        The rogue port 8080 rule is irrelevant; nothing in the stack uses port 8080.
+      </div>
+      <div class="callout info">
+        <strong>Key insight</strong>
+        Terraform only manages what is declared in code. The orphaned port 8080 rule was added out-of-band — Terraform will not remove it (unless you explicitly set <code>incremental_rule_update = false</code>). It reports 1 to add (the missing port 80 rule) but leaves unmanaged rules alone.
+      </div>
+    </div>
+  </div>
+
+  
+  <h3 id="task2-fix">5.3 — Review and Approve the Fix</h3>
+
+  <div class="step">
+    <div class="step-num green">F</div>
+    <div class="step-body">
+      <h3>Review Bob's Proposed Fix</h3>
+      <p>Bob proposes running <code>terraform apply</code> to re-create the missing rule. The change is minimal and surgical:</p>
+      <table>
+        <tr><th>Action</th><th>Resource</th><th>Change</th></tr>
+        <tr><td style="color:#15803d;font-weight:700">+ create</td><td><code>module.vsi.ibm_is_security_group_rule<br />["demo-vsi-sg-allow-http"]</code></td><td>Adds inbound TCP :80 from <code>0.0.0.0/0</code> back to <code>demo-vsi-sg</code></td></tr>
+      </table>
+      <p>No other resources are modified or destroyed.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num green">✓</div>
+    <div class="step-body">
+      <h3>Approve and Apply</h3>
+      <p>Confirm the fix to Bob. Bob triggers a <code>terraform apply</code> run in HCP Terraform. The fix completes in under 90 seconds.</p>
+      <pre># Bob's apply run completes:
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+module.vsi.ibm_is_security_group_rule.security_group_rules["demo-vsi-sg-allow-http"]
+  Creation complete after 2s [id=r006-40b33d67-.../r006-xxxxx]</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num green">🌐</div>
+    <div class="step-body">
+      <h3>Confirm the App Is Restored</h3>
+      <p>Refresh the browser tab:</p>
+      <pre>http://b86b0515-us-south.lb.appdomain.cloud/</pre>
+      <div class="outcome">
+        <h3>✅ App Restored — HTTP 200</h3>
+        <p style="font-size:18px;font-weight:700;margin-bottom:4px">Hello World from IBM Cloud VSI</p>
+        <p style="color:#57606a">Deployed via Terraform + HCP Vault</p>
+      </div>
+      <p>The final security group state after the fix:</p>
+      <table>
+        <tr><th>Direction</th><th>Protocol</th><th>Port</th><th>Status</th></tr>
+        <tr><td>inbound</td><td>tcp</td><td class="fixed">80</td><td>✅ Restored by terraform apply</td></tr>
+        <tr><td>inbound</td><td>tcp</td><td>22</td><td>✅ Unchanged</td></tr>
+        <tr><td>outbound</td><td>all</td><td>—</td><td>✅ Unchanged</td></tr>
+      </table>
+      <div class="callout tip">
+        <strong>Cleaning up the orphan rule</strong>
+        The rogue port 8080 rule added by the break script is not in the Terraform config, so Terraform left it. You can remove it via the IBM Cloud API or console, or ask Bob: <em>"Remove the port 8080 rule from demo-vsi-sg."</em>
+      </div>
+    </div>
+  </div>
+
+  <hr class="phase-divider" />
+
+  
+  <h2 id="troubleshooting">Troubleshooting Reference</h2>
+  <table>
+    <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+    <tr><td>WSL opens and closes immediately</td><td>No Linux distro installed</td><td>Run <code>podman machine init</code> — it installs its own embedded distro</td></tr>
+    <tr><td><code>invalid token</code> from Vault</td><td>Vault token TTL expired</td><td>Generate a new token; update <code>VAULT_TOKEN</code> in <code>.bob/mcp.json</code> and the HCP Terraform <code>vault_token</code> workspace variable</td></tr>
+    <tr><td>Plan error: <code>No value for required variable</code></td><td>Workspace variables not set</td><td>Set <code>vault_addr</code>, <code>vault_token</code>, <code>vault_namespace</code>, <code>resource_group_id</code> in HCP Terraform workspace</td></tr>
+    <tr><td>Plan error: <code>Invalid ephemeral resource</code></td><td>Vault provider version does not support <code>ephemeral</code> resources</td><td>Use <code>data "vault_kv_secret_v2"</code> instead</td></tr>
+    <tr><td>Plan error: <code>connection_limit cannot be null</code></td><td>ALB listener block missing required field</td><td>Add <code>connection_limit = 0</code> to the load balancer block</td></tr>
+    <tr><td>Page loads but returns Nginx 502</td><td>cloud-init still installing Nginx on first boot</td><td>Wait 2–3 min after apply completes</td></tr>
+    <tr><td>Page times out (HTTP 000)</td><td>Subnet Network ACL blocking internet traffic</td><td>Add ACL rules: allow inbound TCP :80, inbound TCP :1024-65535 (ephemeral), and matching outbound return rules</td></tr>
+    <tr><td>App unreachable after break script</td><td>Port 80 inbound rule deleted from VSI security group</td><td>Ask Bob to troubleshoot — it detects drift via <code>terraform plan</code> and proposes restoring the rule via <code>terraform apply</code></td></tr>
+    <tr><td>Terraform plan shows 1 to add after break</td><td>Expected — Terraform detected the missing <code>allow-http</code> rule</td><td>Approve the apply to re-create port 80 rule and restore the app</td></tr>
+  </table>
+
+  
+  <h2 id="resources">Provisioned Resources Summary</h2>
+  <table>
+    <tr><th>Resource</th><th>Name</th><th>Details</th></tr>
+    <tr><td>VPC</td><td><code>demo-vpc</code></td><td>us-south · ID: r006-1c27a5b2-…</td></tr>
+    <tr><td>Public Subnet</td><td><code>demo-vpc-public-subnet</code></td><td>10.10.10.0/24 · us-south-1</td></tr>
+    <tr><td>Public Gateway</td><td><code>demo-vpc-zone-1</code></td><td>us-south-1 outbound internet access</td></tr>
+    <tr><td>Network ACL</td><td><code>demo-vpc-acl</code></td><td>Allows inbound :80, ephemeral :1024-65535 from internet</td></tr>
+    <tr><td>VSI Security Group</td><td><code>demo-vsi-sg</code></td><td>Inbound :22 (SSH) + :80 (HTTP) from internet</td></tr>
+    <tr><td>ALB Security Group</td><td><code>demo-alb-sg</code></td><td>Inbound :80 from internet</td></tr>
+    <tr><td>Virtual Server Instance</td><td><code>demo-c52c-001</code></td><td>cx2-2x4 · Ubuntu 24.04 · 10.10.10.4 · Nginx</td></tr>
+    <tr><td>Application Load Balancer</td><td><code>demo-demo-alb-lb</code></td><td>Public · HTTP :80 → VSI :80 · hostname: b86b0515-us-south.lb.appdomain.cloud</td></tr>
+    <tr><td>SSH Key (IBM Cloud)</td><td><code>demo-vpc-key</code></td><td>RSA-4096 public key registered with IBM Cloud VPC</td></tr>
+    <tr><td>SSH Private Key (Vault)</td><td><code>kv/vsi-private-key</code></td><td>Private key stored in HCP Vault KV-v2 for SSH access</td></tr>
+  </table>
+
+  
+  <h2 id="cleanup">Clean Up</h2>
+  <div class="callout warn">
+    <strong>Avoid ongoing charges</strong>
+    IBM Cloud ALBs and VSIs incur hourly costs. Destroy the environment when the lab is complete.
+  </div>
+  <p>Ask Bob:</p>
+  <pre>Run terraform destroy to remove all provisioned resources.</pre>
+  <p>Or in HCP Terraform UI: <strong>Settings → Destruction and Deletion → Queue destroy plan</strong> and confirm.</p>
+
+  <div class="footer">Made with IBM Bob</div>
+</div>
+</body>
+</html>
