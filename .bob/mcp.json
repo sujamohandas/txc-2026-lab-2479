@@ -1,0 +1,54 @@
+{
+  "mcpServers": {
+    "terraform-ibm-modules-mcp": {
+      "command": "C:\\Users\\SujaMohandas\\AppData\\Local\\uv\\cache\\archive-v0\\aiaWc5ScVB38czDj\\Scripts\\tim-mcp.exe",
+      "args": [],
+      "env": {
+        "GITHUB_TOKEN": "<YOUR_GITHUB_TOKEN>"
+      },
+      "disabled": false,
+      "timeout": 120000
+    },
+    "terraform": {
+      "command": "C:\\Program Files\\RedHat\\Podman\\podman.exe",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "TFE_TOKEN",
+        "-e",
+        "TFE_ADDRESS",
+        "-e",
+        "ENABLE_TF_OPERATIONS",
+        "hashicorp/terraform-mcp-server:0.3.3"
+      ],
+      "env": {
+        "TFE_TOKEN": "<YOUR_TFE_TOKEN>",
+        "TFE_ADDRESS": "https://app.terraform.io",
+        "ENABLE_TF_OPERATIONS": "true"
+      },
+      "disabled": false
+    },
+    "vault": {
+      "command": "C:\\Program Files\\RedHat\\Podman\\podman.exe",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "VAULT_ADDR",
+        "-e",
+        "VAULT_TOKEN",
+        "-e",
+        "VAULT_NAMESPACE",
+        "hashicorp/vault-mcp-server:0.2.0"
+      ],
+      "env": {
+        "VAULT_ADDR": "https://techxchange-lab-vault-public-vault-99dd4f5a.cbec9732.z1.hashicorp.cloud:8200",
+        "VAULT_TOKEN": "<YOUR_VAULT_TOKEN>",
+        "VAULT_NAMESPACE": "admin"
+      }
+    }
+  }
+}
